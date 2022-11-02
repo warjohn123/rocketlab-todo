@@ -12,14 +12,24 @@ function App() {
   const [key, setKey] = useState("on-going");
   const [todos, setTodos] = useState<TodoType[]>([]);
 
-  const getTodos = (status?: TodoStatus) => {
+  const getTodos = (status?: TodoStatus, sortBy?: string) => {
     const todos = new TodoService().getTodos(status ?? TodoStatus.ONGOING);
 
+    if (sortBy) {
+      if (sortBy === "priority") {
+        todos.sort((a, b) => a.position - b.position);
+      } else {
+        todos.sort((a, b) => a.taskName.localeCompare(b.taskName));
+      }
+    }
+    console.log("todos", todos);
     setTodos(todos);
   };
   const handleOnSubmit = (event: any) => {
     event.preventDefault();
     const taskName = event.target[0].value;
+
+    if (!taskName) return;
     new TodoService().addTodo(taskName);
     getTodos();
     setKey("on-going");
@@ -28,7 +38,7 @@ function App() {
 
   const selectTab = (tabKey: string) => {
     if (tabKey === "on-going") {
-      getTodos();
+      getTodos(TodoStatus.ONGOING);
     } else {
       getTodos(TodoStatus.COMPLETED);
     }
@@ -50,12 +60,21 @@ function App() {
           className="mb-3"
         >
           <Tab eventKey="on-going" title="On-going">
-            <TodoItemsList todos={todos} refetch={getTodos} />
+            <TodoItemsList
+              todos={todos}
+              refetch={(sortBy?: string) =>
+                getTodos(TodoStatus.ONGOING, sortBy)
+              }
+              status={TodoStatus.ONGOING}
+            />
           </Tab>
           <Tab eventKey="completed" title="Completed">
             <TodoItemsList
               todos={todos}
-              refetch={() => getTodos(TodoStatus.COMPLETED)}
+              refetch={(sortBy?: string) =>
+                getTodos(TodoStatus.COMPLETED, sortBy)
+              }
+              status={TodoStatus.COMPLETED}
             />
           </Tab>
         </Tabs>

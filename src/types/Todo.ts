@@ -7,4 +7,5 @@ export interface TodoType {
   id: number;
   taskName: string;
   status: TodoStatus;
+  position: number;
 }
