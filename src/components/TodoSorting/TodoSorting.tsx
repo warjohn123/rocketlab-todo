@@ -1,5 +1,4 @@
 import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
 
 interface TodoItemProps {
   onSelect: (event: any) => void;
@@ -10,8 +9,8 @@ const TodoSorting = ({ onSelect }: TodoItemProps) => {
     <Form.Group className="mb-3 mt-3">
       <Form.Label>Sort by</Form.Label>
       <Form.Select onChange={onSelect}>
-        <option value="priority">Priority number</option>
-        <option value="name">Name</option>
+        <option value="Priority">Priority</option>
+        <option value="Name">Name</option>
       </Form.Select>
     </Form.Group>
   );

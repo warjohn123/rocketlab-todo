@@ -1,5 +1,5 @@
 import { TODO_STORAGE_NAME } from "../constants/storage";
-import { TodoStatus, TodoType } from "../types/Todo";
+import { TodoPriority, TodoStatus, TodoType } from "../types/Todo";
 
 export class TodoService {
   getTodos(status?: TodoStatus): TodoType[] {
@@ -8,47 +8,31 @@ export class TodoService {
       JSON.parse(localStorage.getItem(TODO_STORAGE_NAME) ?? "[]") ?? [];
 
     if (status) {
-      return items
-        .filter((item) => item.status === status)
-        .sort((a, b) => a.position - b.position);
+      return items.filter((item) => item.status === status);
     }
 
-    return items.sort((a, b) => a.position - b.position);
+    return items;
   }
 
-  addTodo(taskName: string) {
-    const onGoingItems: TodoType[] = this.getTodos(TodoStatus.ONGOING);
+  addTodo(todoObj: { taskName: string; priority: TodoPriority }) {
     const allItems: TodoType[] = this.getTodos();
     allItems.push({
       id: allItems.length + 1,
-      taskName,
+      taskName: todoObj.taskName,
       status: TodoStatus.ONGOING,
-      position: onGoingItems.length
-        ? onGoingItems[onGoingItems.length - 1].position + 1
-        : 1,
+      priority: todoObj.priority,
     });
     localStorage.setItem(TODO_STORAGE_NAME, JSON.stringify(allItems));
   }
 
-  updatePriority(position: number, todo: TodoType) {
+  updateTodo(todoObj: TodoType) {
     const items: TodoType[] = this.getTodos();
-    const selectedTodoPosition = todo.position;
-    const selectedTodoIndex = items.findIndex(
-      (item) => item.position === position
-    );
+    const todoIndex = items.findIndex((item) => item.id === todoObj.id);
 
-    const selectedPositionTodoIndex = items.findIndex(
-      (item) => item.position === todo.position
-    );
-
-    if (selectedPositionTodoIndex !== -1) {
-      items[selectedPositionTodoIndex].position = position;
+    if (todoIndex === -1) {
+      return;
     }
-
-    if (selectedTodoIndex !== -1) {
-      items[selectedTodoIndex].position = selectedTodoPosition;
-    }
-
+    items[todoIndex] = todoObj;
     localStorage.setItem(TODO_STORAGE_NAME, JSON.stringify(items));
   }
 
@@ -64,6 +48,10 @@ export class TodoService {
   completeTodo(id: number) {
     const items: TodoType[] = this.getTodos();
     const todoIndex = items.findIndex((item) => item.id === id);
+
+    if (todoIndex === -1) {
+      return;
+    }
 
     items[todoIndex].status = TodoStatus.COMPLETED;
     localStorage.setItem(TODO_STORAGE_NAME, JSON.stringify(items));

@@ -4,8 +4,9 @@ import ListGroup from "react-bootstrap/ListGroup";
 import { TodoService } from "../../services/todo.service";
 import { TodoStatus, TodoType } from "../../types/Todo";
 import EmptyPlaceholder from "../EmptyPlaceholder";
-import Form from "react-bootstrap/Form";
 import TodoSorting from "../TodoSorting";
+import Modal from "react-bootstrap/Modal";
+import TodoEditForm from "../TodoEditForm";
 
 interface TodoItemsListProps {
   todos: TodoType[];
@@ -14,38 +15,49 @@ interface TodoItemsListProps {
 }
 
 const TodoItemsList = ({ todos, refetch, status }: TodoItemsListProps) => {
+  const [selectedFilter, setSelectedFilter] = useState<string>("Priority");
+
+  const [selectedTaskToUpdate, setSelectedTaskToUpdate] =
+    useState<TodoType | null>(null);
   const completeTodo = (index: number) => {
     new TodoService().completeTodo(index);
     refetch();
   };
-
-  const [editingPriority, setEditingPriority] = useState<number>(-1);
-  const [priorityValue, setPriorityValue] = useState<number>(-1);
 
   const deleteTodo = (index: number) => {
     new TodoService().deleteTodo(index);
     refetch();
   };
 
-  const updatePriority = (e: any, todo: TodoType) => {
-    e.preventDefault();
-    const value = parseInt(e.target[0].value);
-    setEditingPriority(-1);
-    new TodoService().updatePriority(value, todo);
+  const onFilterSelect = (e: any) => {
+    const filter = e.target.value;
+    setSelectedFilter(filter);
+  };
+
+  const handleOnSubmit = (event: any) => {
+    event.preventDefault();
+    const taskName = event.target[0].value;
+    const priority = event.target[1].value;
+
+    if (!taskName) return;
+
+    new TodoService().updateTodo({
+      ...selectedTaskToUpdate,
+      taskName,
+      priority,
+    } as TodoType);
+
+    setSelectedTaskToUpdate(null);
     refetch();
   };
 
-  const editTaskPriority = (todo: TodoType) => {
-    setEditingPriority(todo.position);
-    setPriorityValue(todo.position);
+  const updateTask = (todo: TodoType) => {
+    setSelectedTaskToUpdate(todo);
   };
 
-  const onFilterSelect = (e: any) => {
-    console.log("e", e.target.value);
-    const filter = e.target.value as "priority" | "name";
-
-    refetch(filter);
-  };
+  useEffect(() => {
+    refetch(selectedFilter);
+  }, [selectedFilter]);
 
   if (!todos.length) {
     return <EmptyPlaceholder />;
@@ -59,51 +71,13 @@ const TodoItemsList = ({ todos, refetch, status }: TodoItemsListProps) => {
         {todos.map((todo, index) => (
           <ListGroup.Item
             key={index}
-            className="d-flex justify-content-between align-items-center"
+            className="d-flex justify-content-between align-items-top"
           >
             <div className="ms-2 me-auto">
-              {status === TodoStatus.COMPLETED && (
-                <div className="fw-bold d-flex align-items-center">
-                  <span>{todo.position}.</span>
-                  &nbsp;
-                  <span>{todo.taskName}</span>
-                </div>
-              )}
-              {status === TodoStatus.ONGOING && (
-                <div
-                  className="fw-bold d-flex align-items-center"
-                  style={{ wordBreak: "break-word" }}
-                >
-                  {editingPriority !== todo.position && (
-                    <span
-                      onClick={() => editTaskPriority(todo)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      {todo.position}.
-                    </span>
-                  )}
-                  {editingPriority === todo.position && (
-                    <Form
-                      onSubmit={(e) => updatePriority(e, todo)}
-                      style={{ width: 80 }}
-                      className="mr-3"
-                    >
-                      <Form.Group className="mb-3 mt-3">
-                        <Form.Control
-                          type="number"
-                          onChange={(e: any) =>
-                            setPriorityValue(e.target.value)
-                          }
-                          value={priorityValue}
-                          maxLength={200}
-                        />
-                      </Form.Group>
-                    </Form>
-                  )}
-                  &nbsp;
-                  <span>{todo.taskName}</span>
-                </div>
-              )}
+              <div>
+                <div className="fw-bold">{todo.taskName}</div>
+                <small>{todo.priority}</small>
+              </div>
             </div>
             <Dropdown>
               <Dropdown.Toggle variant="success" id="dropdown-basic">
@@ -112,9 +86,32 @@ const TodoItemsList = ({ todos, refetch, status }: TodoItemsListProps) => {
 
               <Dropdown.Menu>
                 {todo.status !== TodoStatus.COMPLETED && (
-                  <Dropdown.Item onClick={() => completeTodo(todo.id)}>
-                    Complete Task
-                  </Dropdown.Item>
+                  <>
+                    <Dropdown.Item onClick={() => updateTask(todo)}>
+                      Update Task
+                    </Dropdown.Item>
+                    <Dropdown.Item onClick={() => completeTodo(todo.id)}>
+                      Complete Task
+                    </Dropdown.Item>
+                    {selectedTaskToUpdate && selectedTaskToUpdate.id && (
+                      <Modal
+                        show={Boolean(
+                          selectedTaskToUpdate && selectedTaskToUpdate.id
+                        )}
+                        onHide={() => setSelectedTaskToUpdate(null)}
+                      >
+                        <Modal.Header closeButton>
+                          <Modal.Title>Modal heading</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                          <TodoEditForm
+                            todo={selectedTaskToUpdate}
+                            onSubmit={handleOnSubmit}
+                          />
+                        </Modal.Body>
+                      </Modal>
+                    )}
+                  </>
                 )}
                 <Dropdown.Item onClick={() => deleteTodo(todo.id)}>
                   Delete Task
