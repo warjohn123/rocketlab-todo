@@ -17,18 +17,22 @@ function App() {
 
   const getTodos = (status?: TodoStatus, sortBy?: string) => {
     const todos = new TodoService().getTodos(status ?? TodoStatus.ONGOING);
-    if (sortBy) {
-      if (sortBy === "Priority") {
-        const order = ["High", "Medium", "Low"];
-        todos.sort(
-          (x, y) => order.indexOf(x.priority) - order.indexOf(y.priority)
-        );
-      } else {
-        todos.sort((a, b) => a.taskName.localeCompare(b.taskName));
-      }
+    function sortByPriority() {
+      const order = ["High", "Medium", "Low"];
+      todos.sort(
+        (x, y) => order.indexOf(x.priority) - order.indexOf(y.priority)
+      );
+    }
+    if (sortBy === "Priority") {
+      sortByPriority();
+    } else if (sortBy === "Name") {
+      todos.sort((a, b) => a.taskName.localeCompare(b.taskName));
+    } else {
+      sortByPriority();
     }
     setTodos(todos);
   };
+
   const handleOnSubmit = (event: any) => {
     event.preventDefault();
     const taskName = event.target[0].value;
@@ -38,8 +42,6 @@ function App() {
       taskName,
       priority,
     };
-
-    console.log("priority", priority);
 
     if (!taskName) return;
     new TodoService().addTodo(todoObj);
